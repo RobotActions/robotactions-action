@@ -1,0 +1,111 @@
+name: 'RobotActions Device Cloud'
+description: 'Run tests against real Android and iOS devices and browser nodes on the RobotActions grid'
+author: 'RobotActions'
+
+branding:
+  icon: 'smartphone'
+  color: 'green'
+
+inputs:
+  api-token:
+    description: 'RobotActions API token. Store it as an encrypted secret and pass it as ${{ secrets.RA_API_TOKEN }}.'
+    required: true
+  grid-url:
+    description: 'Grid host or full URL. Defaults to the hosted grid.'
+    required: false
+    default: 'grid.robotactions.com'
+  auth:
+    description: >-
+      How the token reaches the grid: "header" sends Authorization: Bearer,
+      "path" uses a /t/<token>/ URL prefix. Node-based clients such as
+      WebdriverIO must use "header" — Node 18+ fetch rejects credentials
+      embedded in a URL.
+    required: false
+    default: 'header'
+  test-suite:
+    description: 'Suite label recorded against each session, for grouping runs in the dashboard.'
+    required: false
+    default: ''
+  release-id:
+    description: 'Release identifier recorded against each session.'
+    required: false
+    default: ''
+
+outputs:
+  grid-url:
+    description: 'Resolved WebDriver/Appium endpoint, including the token prefix when auth is "path".'
+    value: ${{ steps.resolve.outputs.grid-url }}
+  playwright-ws:
+    description: 'Resolved Playwright remote websocket endpoint.'
+    value: ${{ steps.resolve.outputs.playwright-ws }}
+
+runs:
+  using: 'composite'
+  steps:
+    - id: resolve
+      shell: bash
+      env:
+        RA_INPUT_TOKEN: ${{ inputs.api-token }}
+        RA_INPUT_URL: ${{ inputs.grid-url }}
+        RA_INPUT_AUTH: ${{ inputs.auth }}
+        RA_INPUT_SUITE: ${{ inputs.test-suite }}
+        RA_INPUT_RELEASE: ${{ inputs.release-id }}
+      run: |
+        set -euo pipefail
+
+        # Mask first, before the token can reach any later log line.
+        echo "::add-mask::${RA_INPUT_TOKEN}"
+
+        if [ -z "${RA_INPUT_TOKEN}" ]; then
+          echo "::error::api-token is empty. Pass it from an encrypted secret." >&2
+          exit 1
+        fi
+
+        case "${RA_INPUT_AUTH}" in
+          header|path) ;;
+          *) echo "::error::auth must be 'header' or 'path', got '${RA_INPUT_AUTH}'." >&2; exit 1 ;;
+        esac
+
+        # Accept a bare host or a full URL; normalise to scheme + host.
+        raw="${RA_INPUT_URL%%/}"
+        case "${raw}" in
+          http://*|https://*) scheme="${raw%%://*}"; host="${raw#*://}" ;;
+          *)                  scheme="https";       host="${raw}" ;;
+        esac
+        host="${host%%/}"
+        base="${scheme}://${host}"
+
+        if [ "${RA_INPUT_AUTH}" = "path" ]; then
+          grid_url="${base}/t/${RA_INPUT_TOKEN}"
+        else
+          grid_url="${base}"
+        fi
+
+        ws_scheme="wss"
+        if [ "${scheme}" = "http" ]; then ws_scheme="ws"; fi
+        playwright_ws="${ws_scheme}://${host}/t/${RA_INPUT_TOKEN}/playwright"
+
+        # Outputs carry the token in "path" mode; mask the whole string too.
+        echo "::add-mask::${grid_url}"
+        echo "::add-mask::${playwright_ws}"
+
+        {
+          echo "grid-url=${grid_url}"
+          echo "playwright-ws=${playwright_ws}"
+        } >> "${GITHUB_OUTPUT}"
+
+        {
+          echo "RA_API_TOKEN=${RA_INPUT_TOKEN}"
+          echo "RA_GRID_URL=${base}"
+          echo "RA_GRID_HOST=${host}"
+          echo "AUTH_TOKEN=${RA_INPUT_TOKEN}"
+        } >> "${GITHUB_ENV}"
+
+        if [ -n "${RA_INPUT_SUITE}" ]; then
+          echo "RA_TESTSUITE=${RA_INPUT_SUITE}" >> "${GITHUB_ENV}"
+        fi
+        if [ -n "${RA_INPUT_RELEASE}" ]; then
+          echo "RA_RELEASE_ID=${RA_INPUT_RELEASE}" >> "${GITHUB_ENV}"
+        fi
+
+        echo "RobotActions grid configured at ${base} (auth: ${RA_INPUT_AUTH})."
