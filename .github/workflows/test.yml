@@ -1,0 +1,95 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  header-auth:
+    name: Header auth exports the environment
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - id: setup
+        uses: ./
+        with:
+          api-token: dummy-token-for-tests
+          test-suite: CI self-test
+          release-id: ${{ github.sha }}
+      - name: Assert
+        run: |
+          set -euo pipefail
+          test "${RA_GRID_URL}"  = "https://grid.robotactions.com" || { echo "RA_GRID_URL=${RA_GRID_URL}"; exit 1; }
+          test "${RA_GRID_HOST}" = "grid.robotactions.com"         || { echo "RA_GRID_HOST=${RA_GRID_HOST}"; exit 1; }
+          test "${RA_TESTSUITE}" = "CI self-test"                  || { echo "RA_TESTSUITE=${RA_TESTSUITE}"; exit 1; }
+          test -n "${RA_RELEASE_ID}"                               || { echo "RA_RELEASE_ID unset"; exit 1; }
+          # AUTH_TOKEN is the name the template projects read.
+          test -n "${AUTH_TOKEN}"                                  || { echo "AUTH_TOKEN unset"; exit 1; }
+          # Under header auth the endpoint must NOT carry the token.
+          case "${{ steps.setup.outputs.grid-url }}" in
+            */t/*) echo "grid-url leaked a token under header auth"; exit 1 ;;
+          esac
+          echo "header auth OK"
+
+  path-auth:
+    name: Path auth puts the token in the path
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - id: setup
+        uses: ./
+        with:
+          api-token: dummy-token-for-tests
+          auth: path
+      - name: Assert
+        run: |
+          set -euo pipefail
+          case "${{ steps.setup.outputs.grid-url }}" in
+            */t/*) echo "path auth OK" ;;
+            *)     echo "grid-url has no token prefix under path auth"; exit 1 ;;
+          esac
+
+  local-http:
+    name: A local http grid infers ws, not wss
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - id: setup
+        uses: ./
+        with:
+          api-token: dummy-token-for-tests
+          grid-url: http://localhost:5555
+      - name: Assert
+        run: |
+          set -euo pipefail
+          test "${RA_GRID_URL}" = "http://localhost:5555" || { echo "RA_GRID_URL=${RA_GRID_URL}"; exit 1; }
+          case "${{ steps.setup.outputs.playwright-ws }}" in
+            ws://*)  echo "local http OK" ;;
+            wss://*) echo "inferred wss for an http grid"; exit 1 ;;
+            *)       echo "unexpected: ${{ steps.setup.outputs.playwright-ws }}"; exit 1 ;;
+          esac
+
+  rejects-bad-input:
+    name: Empty token and bad auth both fail the step
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - id: empty
+        continue-on-error: true
+        uses: ./
+        with:
+          api-token: ''
+      - id: bad
+        continue-on-error: true
+        uses: ./
+        with:
+          api-token: dummy-token-for-tests
+          auth: not-a-real-mode
+      - name: Assert both failed
+        run: |
+          set -euo pipefail
+          test "${{ steps.empty.outcome }}" = "failure" || { echo "empty token did not fail"; exit 1; }
+          test "${{ steps.bad.outcome }}"   = "failure" || { echo "bad auth did not fail"; exit 1; }
+          echo "input validation OK"
