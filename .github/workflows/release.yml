@@ -23,6 +23,11 @@ jobs:
           set -euo pipefail
           version="${GITHUB_REF_NAME}"
           major="${version%%.*}"           # v1.2.3 -> v1
+          if [ "${major}" = "v0" ]; then
+            echo "0.x permits breaking changes in a minor bump — not moving a v0 tag."
+            echo "Consumers pin exact versions until v1.0.0."
+            exit 0
+          fi
           echo "Moving ${major} to ${version} (${GITHUB_SHA})"
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

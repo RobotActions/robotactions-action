@@ -1,10 +1,13 @@
 # Changelog
 
-Versioning follows [semver](https://semver.org). Marketplace consumers pin to
-the floating major tag (`@v1`), which is moved to each release automatically by
-`.github/workflows/release.yml`.
+Versioning follows [semver](https://semver.org).
 
-## v1.0.0
+While this is `0.x`, semver permits breaking changes in a minor bump, so there
+is deliberately **no floating `v0` tag** — pin an exact version. From `v1.0.0`
+onward, `.github/workflows/release.yml` moves the major tag (`v1`) to each
+release and pinning to that is the recommended usage.
+
+## v0.1.0
 
 First release.
 

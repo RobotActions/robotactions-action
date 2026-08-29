@@ -11,7 +11,7 @@ test command or dictate a runner.
 ## Usage
 
 ```yaml
-- uses: RobotActions/robotactions-action@v1
+- uses: RobotActions/robotactions-action@v0.1.0
   with:
     api-token: ${{ secrets.RA_API_TOKEN }}
 
@@ -21,7 +21,7 @@ test command or dictate a runner.
 With a suite label so runs group in the dashboard:
 
 ```yaml
-- uses: RobotActions/robotactions-action@v1
+- uses: RobotActions/robotactions-action@v0.1.0
   with:
     api-token: ${{ secrets.RA_API_TOKEN }}
     test-suite: Nightly regression
