@@ -98,6 +98,9 @@ runs:
           echo "RA_API_TOKEN=${RA_INPUT_TOKEN}"
           echo "RA_GRID_URL=${base}"
           echo "RA_GRID_HOST=${host}"
+          # The template projects read the unprefixed names, so export both.
+          echo "GRID_URL=${base}"
+          echo "GRID_HOST=${host}"
           echo "AUTH_TOKEN=${RA_INPUT_TOKEN}"
         } >> "${GITHUB_ENV}"
 

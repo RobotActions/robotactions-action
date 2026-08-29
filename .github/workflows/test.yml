@@ -23,6 +23,9 @@ jobs:
           set -euo pipefail
           test "${RA_GRID_URL}"  = "https://grid.robotactions.com" || { echo "RA_GRID_URL=${RA_GRID_URL}"; exit 1; }
           test "${RA_GRID_HOST}" = "grid.robotactions.com"         || { echo "RA_GRID_HOST=${RA_GRID_HOST}"; exit 1; }
+          # Unprefixed names are what the template projects actually read.
+          test "${GRID_URL}"     = "https://grid.robotactions.com" || { echo "GRID_URL=${GRID_URL}"; exit 1; }
+          test "${GRID_HOST}"    = "grid.robotactions.com"         || { echo "GRID_HOST=${GRID_HOST}"; exit 1; }
           test "${RA_TESTSUITE}" = "CI self-test"                  || { echo "RA_TESTSUITE=${RA_TESTSUITE}"; exit 1; }
           test -n "${RA_RELEASE_ID}"                               || { echo "RA_RELEASE_ID unset"; exit 1; }
           # AUTH_TOKEN is the name the template projects read.

@@ -11,7 +11,7 @@ test command or dictate a runner.
 ## Usage
 
 ```yaml
-- uses: RobotActions/robotactions-action@v0.1.0
+- uses: RobotActions/robotactions-action@v0.2.0
   with:
     api-token: ${{ secrets.RA_API_TOKEN }}
 
@@ -21,7 +21,7 @@ test command or dictate a runner.
 With a suite label so runs group in the dashboard:
 
 ```yaml
-- uses: RobotActions/robotactions-action@v0.1.0
+- uses: RobotActions/robotactions-action@v0.2.0
   with:
     api-token: ${{ secrets.RA_API_TOKEN }}
     test-suite: Nightly regression
@@ -57,8 +57,8 @@ them. The Python and Java clients can.
 
 ## Exported environment
 
-`RA_API_TOKEN`, `RA_GRID_URL`, `RA_GRID_HOST`, and `AUTH_TOKEN` (the name the
-template projects read). `RA_TESTSUITE` and `RA_RELEASE_ID` are exported only
+`RA_API_TOKEN`, `RA_GRID_URL`, `RA_GRID_HOST`, plus the unprefixed `GRID_URL`,
+`GRID_HOST` and `AUTH_TOKEN` that the template projects read. `RA_TESTSUITE` and `RA_RELEASE_ID` are exported only
 when supplied.
 
 ## Examples by framework
