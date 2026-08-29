@@ -87,6 +87,23 @@ reach any later output. Under `path` auth the resolved URLs contain the token,
 so those are masked too. Always pass it from an encrypted secret — an inline
 token is readable by anyone who can see the workflow file.
 
+## Releasing
+
+```sh
+scripts/release.sh 0.3.0            # cut a release
+scripts/release.sh 0.3.0 --dry-run  # show what it would do
+```
+
+Write the `## v0.3.0` section in `CHANGELOG.md` first — the script takes the
+release notes from there and refuses to publish without them. It also refuses
+to tag a commit whose CI is not green, and after publishing it checks that the
+release, the remote tag, and the Marketplace listing actually exist rather than
+assuming the steps worked.
+
+Marketplace publication itself is a manual, 2FA-gated step in the GitHub UI.
+The script cannot do it, so it tells you when the listing is missing and how to
+finish.
+
 ## License
 
 MIT
